@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -43,6 +45,48 @@ func TestGencode(t *testing.T) {
 
 			if isValid != tt.expected {
 				t.Errorf("Expected validity %v, but got %v", tt.expected, isValid)
+			}
+		})
+	}
+}
+func TestSendJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		resp     Response
+		status   int
+		expected string
+	}{
+		{
+			name:     "Valid response with data",
+			resp:     Response{Data: "testdata"},
+			status:   http.StatusOK,
+			expected: `{"data":"testdata"}`,
+		},
+		{
+			name:     "Valid response with error",
+			resp:     Response{Error: "testerror"},
+			status:   http.StatusBadRequest,
+			expected: `{"error":"testerror"}`,
+		},
+		{
+			name:     "Empty response",
+			resp:     Response{},
+			status:   http.StatusNoContent,
+			expected: `{}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			SendJSON(w, tt.resp, tt.status)
+
+			if w.Code != tt.status {
+				t.Errorf("Expected status %v, but got %v", tt.status, w.Code)
+			}
+
+			if w.Body.String() != tt.expected {
+				t.Errorf("Expected body %v, but got %v", tt.expected, w.Body.String())
 			}
 		})
 	}
